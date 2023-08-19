@@ -1,0 +1,227 @@
+from flask import Flask,flash,redirect, jsonify, request
+# from flask import Flask, jsonify
+from flask_restx import Api, Resource
+from flask_cors import CORS
+import json
+import numpy as np
+from model import StockPrediction
+import datetime
+from prediction import prediction 
+from retrieve_data import retrieve_data
+app = Flask(__name__)
+CORS(app)  # Enable CORS for your app
+
+api = Api(app, version='1.0', title='Your API', description='API Documentation')
+
+
+nifty50 = ['ADANIPORTS', 'TITAN', 'ADANIENT', 'SBIN', 'BAJAJ-AUTO', 'DRREDDY', 'TATACONSUM', 'BAJAJFINSV', 'AXISBANK', 'HDFCLIFE', 'BRITANNIA', 'HINDALCO', 'CIPLA', 'TECHM', 'BHARTIARTL', 'TATASTEEL', 'HEROMOTOCO', 'BPCL', 'SUNPHARMA', 'M&M', 'HCLTECH', 'INDUSINDBK', 'COALINDIA', 'WIPRO', 'MARUTI', 'ASIANPAINT', 'ULTRACEMCO', 'INFY', 'HINDUNILVR', 'ICICIBANK', 'HDFCBANK', 'NTPC', 'UPL', 'TATAMOTORS', 'BAJFINANCE', 'ONGC', 'JSWSTEEL', 'TCS', 'SBILIFE', 'GRASIM', 'EICHERMOT', 'KOTAKBANK', 'APOLLOHOSP', 'DIVISLAB', 'NESTLEIND', 'LT', 'RELIANCE', 'POWERGRID', 'LTIM', 'ITC']
+
+niftyMidCap50 = ['RECLTD', 'BATAINDIA', 'ESCORTS', 'PFC', 'SHRIRAMFIN', 'PNB', 'BANDHANBNK', 'FEDERALBNK', 'MPHASIS', 'TRENT', 'M&MFIN', 'CONCOR', 'HINDPETRO', 'CUMMINSIND', 'IDFCFIRSTB', 'LTTS', 'LICHSGFIN', 'MRF', 'SAIL', 'GODREJPROP', 'ASHOKLEY', 'MFSL', 'UBL', 'ALKEM', 'TVSMOTOR', 'TATACOMM', 'GUJGASLTD', 'BIOCON', 'AUBANK', 'INDHOTEL', 'VOLTAS', 'NMDC', 'PETRONET', 'IDEA', 'OBEROIRLTY', 'HONAUT', 'ABCAPITAL', 'POLYCAB', 'BHARATFORG', 'AUROPHARMA', 'BALKRISIND', 'JUBLFOOD', 'ZEEL', 'ABBOTINDIA', 'PERSISTENT', 'OFSS', 'COFORGE', 'ZYDUSLIFE', 'ASTRAL', 'LUPIN']
+
+niftySmallCap50 = ['LATENTVIEW', 'JUBLINGREA', 'MANAPPURAM', 'BSOFT', 'CHAMBLFERT', 'BSE', 'MRPL', 'KPITTECH', 'CAMS', 'AMARAJABAT', 'IEX', 'CYIENT', 'MAHABANK', 'PVRINOX', 'RBLBANK', 'IRB', 'CUB', 'IDFC', 'RVNL', 'ANGELONE', 'RENUKA', 'BIRLACORPN', 'GNFC', 'MEDANTA', 'ROUTE', 'ANURAS', 'UCOBANK', 'GRAPHITE', 'HINDCOPPER', 'METROPOLIS', 'RADICO', 'LXCHEM', 'CDSL', 'MAZDOCK', 'BIKAJI', 'JBCHEPHARM', 'CESC', 'BDL', 'HFCL', 'CAMPUS', 'MEDPLUS', 'UTIAMC', 'IDBI', 'NATIONALUM', 'WELSPUNIND', 'REDINGTON', 'SUZLON', 'BALAMINES', 'EASEMYTRIP', 'IOB']
+
+
+app.config['SECRET_KEY']='0331a5c84e4e1924170f'
+
+
+
+
+@app.route("/get_NIFTY_50_prediction",methods = ['GET','POST'])
+def get_data_NIFTY_prediction():
+   prediction_data = {}
+   days = 10
+   print(f"days : {days}")
+   current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+  
+   for cmp in nifty50:
+      prediction_data[cmp] = prediction(cmp,current_date,days)
+   json_data = json.dumps(prediction_data) 
+   return  json_data
+
+@app.route("/get_NIFTY_50_sigmoid",methods = ['GET','POST'])
+def get_data_NIFTY_sigmoid():
+   retrieved_data = {}
+   days = 10
+   prediction_data = {}
+   profit = {}
+   current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+   for cmp in nifty50:
+      retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=1))
+      prediction_data[cmp] = json.loads(prediction(cmp,current_date,days))
+      profit[cmp] = int(prediction_data[cmp][-1]) - int(retrieved_data[cmp][0]['Close'])
+      count+=1
+   
+   sorted_list_desc = sorted(profit.items(), key=lambda item: item[1], reverse=True)
+   # print(sorted_list_desc)
+   sorted_list_desc = sorted_list_desc[0:10]
+   values = np.array([item[1] for item in sorted_list_desc])
+   print(values)
+   exp_values = np.exp(values)  # Subtracting the max value for numerical stability
+   probabilities = exp_values / np.sum(exp_values)
+   print(probabilities)
+   result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
+   final_return_val = {"prob":[],"comp":[],"cur_price":[]}
+   for item in result:
+      comp,prob = item
+      cur_price =  retrieved_data[comp][0]['Close']
+      final_return_val['prob'].append(prob)
+      final_return_val['comp'].append(comp)
+      final_return_val['cur_price'].append(cur_price)
+
+   # print(f"cur : {retrieved_data['ADANIPORTS']}, prediction_data : {prediction_data['ADANIPORTS'][-1]} , {profit['ADANIPORTS']}")
+   # print(f"curr : {retrieved_data['ADANIPORTS']}, {type(retrieved_data['ADANIPORTS'][0]['Close'])}, prediction_data : {prediction_data['ADANIPORTS'][-1]} , {type(prediction_data['ADANIPORTS'])}")
+   json_data = json.dumps(final_return_val) 
+      # print(json_data)
+   return json_data
+
+@api.route('/get_NIFTY_50_sigmoid')
+class NIFTY50sigmoidResource(Resource):
+    def put(self):
+         
+         retrieved_data = {}
+         days = 10
+         prediction_data = {}
+         profit = {}
+         current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+         for cmp in nifty50:
+            retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=1))
+            prediction_data[cmp] = json.loads(prediction(cmp,current_date,days))
+            profit[cmp] = int(prediction_data[cmp][-1]) - int(retrieved_data[cmp][0]['Close'])
+            count+=1
+         
+         sorted_list_desc = sorted(profit.items(), key=lambda item: item[1], reverse=True)
+         sorted_list_desc = sorted_list_desc[0:10]
+         values = np.array([item[1] for item in sorted_list_desc])
+         exp_values = np.exp(values)  # Subtracting the max value for numerical stability
+         probabilities = exp_values / np.sum(exp_values)
+         result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
+         final_return_val = {"prob":[],"comp":[],"cur_price":[]}
+         for item in result:
+            comp,prob = item
+            cur_price =  retrieved_data[comp][0]['Close']
+            final_return_val['prob'].append(prob)
+            final_return_val['comp'].append(comp)
+            final_return_val['cur_price'].append(cur_price)
+
+         # print(f"cur : {retrieved_data['ADANIPORTS']}, prediction_data : {prediction_data['ADANIPORTS'][-1]} , {profit['ADANIPORTS']}")
+         # print(f"curr : {retrieved_data['ADANIPORTS']}, {type(retrieved_data['ADANIPORTS'][0]['Close'])}, prediction_data : {prediction_data['ADANIPORTS'][-1]} , {type(prediction_data['ADANIPORTS'])}")
+         json_data = json.dumps(final_return_val) 
+            # print(json_data)
+         return json_data, 200
+
+@api.route('/get_NIFTY_50_prediction')
+class NIFTY50PredictionResource(Resource):
+    def get(self):
+         prediction_data = {}
+         current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+         days = 10
+         for cmp in nifty50:
+               prediction_data[cmp] = prediction(cmp, current_date, days)
+         json_data = json.dumps(prediction_data) 
+         print(json_data)
+         return json_data, 200
+
+
+
+@api.route('/get_data_midcap_prediction')
+class midcapPredictionResource(Resource):
+    def get(self):
+         prediction_data = {}
+         current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+         days = 10
+         for cmp in niftyMidCap50:
+               prediction_data[cmp] = prediction(cmp, current_date, days)
+         json_data = json.dumps(prediction_data)
+         print(json_data)
+         return json_data, 200
+     
+
+@app.route("/get_data_midcap_prediction",methods = ['GET','POST'])
+def get_data_midcap_prediction():
+   prediction_data = {}
+   current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+   days = 10
+   for cmp in niftyMidCap50:
+      prediction_data[cmp] = prediction(cmp,current_date,days)
+   json_data = json.dumps(prediction_data) 
+   return  json_data
+
+
+@app.route("/get_data_smallcap_prediction",methods = ['GET','POST'])
+def get_data_smallcap_prediction():
+   prediction_data = {}
+   current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+   days = 10
+   for cmp in niftySmallCap50:
+      prediction_data[cmp] = prediction(cmp,current_date,days)
+   json_data = json.dumps(prediction_data) 
+   return  json_data
+
+@api.route('/get_data_smallcap_prediction')
+class smallcapPredictionResource(Resource):
+    def get(self):
+         prediction_data = {}
+         current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+         days = 10
+         for cmp in niftySmallCap50:
+            prediction_data[cmp] = prediction(cmp, current_date, days)
+           
+         json_data = json.dumps(prediction_data)
+         # print(json_data) 
+         return json_data, 200
+
+@app.route("/get_compant_prediction",methods = ['GET','POST'])
+def get_data_company_prediction():
+   prediction_data = {}
+   current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+   # print(current_date)
+   company_name = request.args.get("company_name")
+   days = 10
+   prediction_data[current_date] = prediction(company_name,current_date,days)
+   json_data = json.dumps(prediction_data) 
+   return  json_data
+
+@app.route("/get_current_data",methods = ['GET','POST'])
+def get_current_data():
+   days = int(request.args.get('days'))
+   companyname = request.args.get('company_name')
+   retrieved_data = {}
+   current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+   # for cmp in nifty50:
+   retrieved_data[companyname] = retrieve_data(company_name=companyname,date=current_date,days=days)
+   json_data = json.dumps(retrieved_data) 
+   return  json_data
+
+
+@api.route("/post_current_data")
+class Companyretrive_cur_dataResource(Resource):
+   def get(self):
+      # days = int(request.args.get('days'))
+      days = 7
+      print(request.args.get('days'))
+      companyname = request.args.get('company_name')
+      print(companyname)
+      retrieved_data = {}
+      current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+      # for cmp in nifty50:
+      retrieved_data[companyname] = retrieve_data(company_name=companyname,date=current_date,days=days)
+      json_data = json.dumps(retrieved_data) 
+      return  json_data,200
+
+
+@api.route('/get_company_prediction')
+class CompanyPredictionResource(Resource):
+    def get(self):
+        prediction_data = {}
+        current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+        company_name = api.payload.get("company_name")
+        days = 10
+        prediction_data[current_date] = prediction(company_name, current_date, days)
+        print(prediction_data)
+        json_data = json.dumps(prediction_data) 
+        return json_data, 200
+
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
