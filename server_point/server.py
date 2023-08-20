@@ -158,6 +158,16 @@ def get_data_midcap_prediction():
    json_data = jsonify(prediction_data) 
    return  json_data
 
+@app.route("/get_midcap_data",methods = ['GET','POST'])
+def get_midcap_data():
+   days = int(request.args.get('days'))
+   # companyname = request.args.get('company_name')
+   retrieved_data = {}
+   current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+   for cmp in niftyMidCap50:
+      retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=days))
+   json_data = jsonify(retrieved_data) 
+   return  json_data
 
 @app.route("/get_data_smallcap_prediction",methods = ['GET','POST'])
 def get_data_smallcap_prediction():
@@ -169,7 +179,16 @@ def get_data_smallcap_prediction():
    json_data = jsonify(prediction_data) 
    return  json_data
 
-
+@app.route("/get_smallcap_data",methods = ['GET','POST'])
+def get_smallcap_data():
+   days = int(request.args.get('days'))
+   # companyname = request.args.get('company_name')
+   retrieved_data = {}
+   current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+   for cmp in niftySmallCap50:
+      retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=days))
+   json_data = jsonify(retrieved_data) 
+   return  json_data
 
 @app.route("/get_compant_prediction",methods = ['GET','POST'])
 def get_data_company_prediction():
