@@ -29,7 +29,7 @@ store_prediction = {}
 
 @app.route("/store_predictions",methods = ["GET","POST"])
 def store_predictions():
-   store_predictions.clear()
+   store_prediction.clear()
    current_date = datetime.datetime.now().strftime('%Y-%m-%d')
    fdays = 10
    pastdays = 100
@@ -152,7 +152,7 @@ def get_mid_cap_sigmoid():
    for cmp in niftyMidCap50:
       mid_retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=1))
       mid_prediction_data[cmp] = json.loads(prediction(cmp,current_date,days))
-      profit[cmp] = int(mid_prediction_data[cmp][-1]) - int(mid_retrieved_data[cmp][0]['Close'])
+      profit[cmp] = int(mid_prediction_data[cmp][0]) - int(mid_retrieved_data[cmp][0]['Close'])
    
    sorted_list_desc = sorted(profit.items(), key=lambda item: item[1], reverse=True)
    # print(sorted_list_desc)
@@ -294,10 +294,9 @@ class small_cap_sigmoidresource(Resource):
       profit = {}
       current_date = datetime.datetime.now().strftime('%Y-%m-%d')
       for cmp in niftySmallCap50:
-         if count == 0:
-            small_retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=1))
-            small_prediction_data[cmp] = json.loads(prediction(cmp,current_date,days))
-            profit[cmp] = int(small_prediction_data[cmp][-1]) - int(small_retrieved_data[cmp][0]['Close'])
+         small_retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=1))
+         small_prediction_data[cmp] = json.loads(prediction(cmp,current_date,days))
+         profit[cmp] = int(small_prediction_data[cmp][0]) - int(small_retrieved_data[cmp][0]['Close'])
 
       sorted_list_desc = sorted(profit.items(), key=lambda item: item[1], reverse=True)
       # print(sorted_list_desc)
@@ -328,11 +327,10 @@ class mid_cap_sigmoidresource(Resource):
       profit = {}
       current_date = datetime.datetime.now().strftime('%Y-%m-%d')
       for cmp in niftyMidCap50:
-         if count == 0:
-            mid_retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=1))
-            mid_prediction_data[cmp] = json.loads(prediction(cmp,current_date,days))
-            profit[cmp] = int(mid_prediction_data[cmp][-1]) - int(mid_retrieved_data[cmp][0]['Close'])
-      
+         mid_retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=1))
+         mid_prediction_data[cmp] = json.loads(prediction(cmp,current_date,days))
+         profit[cmp] = int(mid_prediction_data[cmp][-1]) - int(mid_retrieved_data[cmp][0]['Close'])
+   
       sorted_list_desc = sorted(profit.items(), key=lambda item: item[1], reverse=True)
       # print(sorted_list_desc)
       sorted_list_desc = sorted_list_desc[0:10]
@@ -378,7 +376,6 @@ class NIFTY50PredictionResource(Resource):
          current_date = datetime.datetime.now().strftime('%Y-%m-%d')
          days = 10
          for cmp in nifty50:
-            if count == 0:
                prediction_data[cmp] = prediction(cmp, current_date, days)
          json_data = jsonify(prediction_data) 
          print(json_data)
@@ -395,11 +392,10 @@ class NIFTY50sigmoidResource(Resource):
          profit = {}
          current_date = datetime.datetime.now().strftime('%Y-%m-%d')
          for cmp in nifty50:
-            if count == 0:
-               retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=1))
-               prediction_data[cmp] = json.loads(prediction(cmp,current_date,days))
-               profit[cmp] = int(prediction_data[cmp][-1]) - int(retrieved_data[cmp][0]['Close'])
-         
+            retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=1))
+            prediction_data[cmp] = json.loads(prediction(cmp,current_date,days))
+            profit[cmp] = int(prediction_data[cmp][-1]) - int(retrieved_data[cmp][0]['Close'])
+      
          sorted_list_desc = sorted(profit.items(), key=lambda item: item[1], reverse=True)
          sorted_list_desc = sorted_list_desc[0:10]
          values = np.array([item[1] for item in sorted_list_desc])
