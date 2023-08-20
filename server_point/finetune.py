@@ -52,7 +52,7 @@ def fine_tune(date, company_name, days=60):
     prev_data = prev_data[['Date', 'Close']]
     prev_data['Date'] = pd.to_datetime(prev_data['Date'])
     prev_data['Close'] = prev_data['Close'].astype(float)
-    parameter_file = './parameters'
+    parameter_file = '../parameters'
     pickle_filename = pickle_file = os.path.join(parameter_file, 'parameters.pkl')
     
     with open(pickle_filename, 'rb') as pickle_file:
@@ -72,7 +72,7 @@ def fine_tune(date, company_name, days=60):
     y = torch.tensor(y, dtype=torch.float32)
 
     
-    pickle_directory = "./path_to_store_pickle_files/"
+    pickle_directory = "../path_to_store_pickle_files/"
     pkl_file_name = f'{company_name}'
     model_ = load_model(pickle_directory, pkl_file_name)
     print(model_)

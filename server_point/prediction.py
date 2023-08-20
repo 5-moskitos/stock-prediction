@@ -54,7 +54,7 @@ def prediction(company_name, date,  days=60):
     prev_data = prev_data[['Date', 'Close']]
     prev_data['Date'] = pd.to_datetime(prev_data['Date'])
     prev_data['Close'] = prev_data['Close'].astype(float)
-    parameter_file = './parameters'
+    parameter_file = '../parameters'
     pickle_filename = pickle_file = os.path.join(parameter_file, 'parameters.pkl')
     
     with open(pickle_filename, 'rb') as pickle_file:
@@ -76,7 +76,7 @@ def prediction(company_name, date,  days=60):
     X = torch.tensor(X,dtype=torch.float32)
     y = torch.tensor(y, dtype=torch.float32)
 
-    pickle_directory = "./path_to_store_pickle_files/"
+    pickle_directory = "../path_to_store_pickle_files/"
     pkl_file_name = f'{company_name}'
     model_ = load_pickle_file(pickle_directory, pkl_file_name)
     X = X.unsqueeze(-1)
