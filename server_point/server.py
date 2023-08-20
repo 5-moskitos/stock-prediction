@@ -36,10 +36,10 @@ def store_predictions():
    companyes = [nifty50,niftyMidCap50,niftySmallCap50]
    for groups in companyes:
       for cmp in groups:
-         if cmp not in store_predictions:
+         if cmp not in store_prediction:
                   future = json.loads(prediction(cmp,current_date,fdays))
                   past = json.loads(retrieve_data(company_name=cmp,date=current_date,days=pastdays))
-                  store_predictions[cmp] = {"future":future,"past":past}
+                  store_prediction[cmp] = {"future":future,"past":past}
    return "done"
              
    
