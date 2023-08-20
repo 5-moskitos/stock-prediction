@@ -25,7 +25,7 @@ niftySmallCap50 = ['LATENTVIEW', 'JUBLINGREA', 'MANAPPURAM', 'BSOFT', 'CHAMBLFER
 app.config['SECRET_KEY']='0331a5c84e4e1924170f'
 
 
-
+count = 0
 
 @app.route("/get_NIFTY_50_prediction",methods = ['GET','POST'])
 def get_data_NIFTY_prediction():
@@ -166,7 +166,7 @@ def get_data_company_prediction():
    current_date = datetime.datetime.now().strftime('%Y-%m-%d')
    # print(current_date)
    company_name = request.args.get("company_name")
-   days = 10
+   days = int(request.args.get("days"))
    prediction_data[current_date] = prediction(company_name,current_date,days)
    json_data = json.dumps(prediction_data) 
    return  json_data
@@ -210,9 +210,10 @@ class small_cap_sigmoidresource(Resource):
       profit = {}
       current_date = datetime.datetime.now().strftime('%Y-%m-%d')
       for cmp in niftySmallCap50:
-         small_retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=1))
-         small_prediction_data[cmp] = json.loads(prediction(cmp,current_date,days))
-         profit[cmp] = int(small_prediction_data[cmp][-1]) - int(small_retrieved_data[cmp][0]['Close'])
+         if count == 0:
+            small_retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=1))
+            small_prediction_data[cmp] = json.loads(prediction(cmp,current_date,days))
+            profit[cmp] = int(small_prediction_data[cmp][-1]) - int(small_retrieved_data[cmp][0]['Close'])
 
       sorted_list_desc = sorted(profit.items(), key=lambda item: item[1], reverse=True)
       # print(sorted_list_desc)
@@ -243,9 +244,10 @@ class mid_cap_sigmoidresource(Resource):
       profit = {}
       current_date = datetime.datetime.now().strftime('%Y-%m-%d')
       for cmp in niftyMidCap50:
-         mid_retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=1))
-         mid_prediction_data[cmp] = json.loads(prediction(cmp,current_date,days))
-         profit[cmp] = int(mid_prediction_data[cmp][-1]) - int(mid_retrieved_data[cmp][0]['Close'])
+         if count == 0:
+            mid_retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=1))
+            mid_prediction_data[cmp] = json.loads(prediction(cmp,current_date,days))
+            profit[cmp] = int(mid_prediction_data[cmp][-1]) - int(mid_retrieved_data[cmp][0]['Close'])
       
       sorted_list_desc = sorted(profit.items(), key=lambda item: item[1], reverse=True)
       # print(sorted_list_desc)
@@ -292,6 +294,7 @@ class NIFTY50PredictionResource(Resource):
          current_date = datetime.datetime.now().strftime('%Y-%m-%d')
          days = 10
          for cmp in nifty50:
+            if count == 0:
                prediction_data[cmp] = prediction(cmp, current_date, days)
          json_data = json.dumps(prediction_data) 
          print(json_data)
@@ -308,9 +311,10 @@ class NIFTY50sigmoidResource(Resource):
          profit = {}
          current_date = datetime.datetime.now().strftime('%Y-%m-%d')
          for cmp in nifty50:
-            retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=1))
-            prediction_data[cmp] = json.loads(prediction(cmp,current_date,days))
-            profit[cmp] = int(prediction_data[cmp][-1]) - int(retrieved_data[cmp][0]['Close'])
+            if count == 0:
+               retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=1))
+               prediction_data[cmp] = json.loads(prediction(cmp,current_date,days))
+               profit[cmp] = int(prediction_data[cmp][-1]) - int(retrieved_data[cmp][0]['Close'])
          
          sorted_list_desc = sorted(profit.items(), key=lambda item: item[1], reverse=True)
          sorted_list_desc = sorted_list_desc[0:10]
@@ -339,6 +343,7 @@ class midcapPredictionResource(Resource):
          current_date = datetime.datetime.now().strftime('%Y-%m-%d')
          days = 10
          for cmp in niftyMidCap50:
+            if count == 0:
                midcap_prediction_data[cmp] = prediction(cmp, current_date, days)
          json_data = json.dumps(midcap_prediction_data)
          print(json_data)
@@ -352,7 +357,8 @@ class smallcapPredictionResource(Resource):
          current_date = datetime.datetime.now().strftime('%Y-%m-%d')
          days = 10
          for cmp in niftySmallCap50:
-            smallcap_prediction_data[cmp] = prediction(cmp, current_date, days)
+            if count == 0:
+               smallcap_prediction_data[cmp] = prediction(cmp, current_date, days)
            
          json_data = json.dumps(smallcap_prediction_data)
          # print(json_data) 
@@ -380,7 +386,7 @@ class CompanyPredictionResource(Resource):
         Company_prediction_data = {}
         current_date = datetime.datetime.now().strftime('%Y-%m-%d')
         company_name = api.payload.get("company_name")
-        days = 10
+        days = api.payload.get("days")
         Company_prediction_data[current_date] = prediction(company_name, current_date, days)
         print(Company_prediction_data)
         json_data_company = json.dumps(Company_prediction_data) 
