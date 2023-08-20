@@ -27,15 +27,23 @@ app.config['SECRET_KEY']='0331a5c84e4e1924170f'
 
 count = 0
 
-@app.route("/get_NIFTY_50_prediction",methods = ['GET','POST'])
-def get_data_NIFTY_prediction():
+@app.route("/get_data_NIFTY_50_prediction",methods = ['GET','POST'])
+def get_NIFTY_50_prediction():
    prediction_data = {}
-   days = 10
-   print(f"days : {days}")
    current_date = datetime.datetime.now().strftime('%Y-%m-%d')
-  
+   fdays = 10
+   if request.args.get('fdays'):
+      fdays = int(request.args.get('fdays'))
+      
+   pastdays = 0
+   if request.args.get('pdays'):
+      pastdays = int(request.args.get('pdays'))
+   
    for cmp in nifty50:
-      prediction_data[cmp] = prediction(cmp,current_date,days)
+      future = json.loads(prediction(cmp,current_date,fdays))
+      if pastdays:
+         past = json.loads(retrieve_data(company_name=cmp,date=current_date,days=pastdays))
+      prediction_data[cmp] = {"future":future,"past":past}
    json_data = jsonify(prediction_data) 
    return  json_data
 
@@ -149,12 +157,22 @@ def get_mid_cap_sigmoid():
    return json_data
 
 @app.route("/get_data_midcap_prediction",methods = ['GET','POST'])
-def get_data_midcap_prediction():
+def get_midcap_prediction():
    prediction_data = {}
    current_date = datetime.datetime.now().strftime('%Y-%m-%d')
-   days = 10
+   fdays = 10
+   if request.args.get('fdays'):
+      fdays = int(request.args.get('fdays'))
+   pastdays = 0
+   if request.args.get('days'):
+      pastdays = int(request.args.get('days'))
+   
    for cmp in niftyMidCap50:
-      prediction_data[cmp] = prediction(cmp,current_date,days)
+      future = json.loads(prediction(cmp,current_date,fdays))
+
+      if pastdays:
+         past = json.loads(retrieve_data(company_name=cmp,date=current_date,days=pastdays))
+      prediction_data[cmp] = {"future":future,"past":past}
    json_data = jsonify(prediction_data) 
    return  json_data
 
@@ -170,12 +188,23 @@ def get_midcap_data():
    return  json_data
 
 @app.route("/get_data_smallcap_prediction",methods = ['GET','POST'])
-def get_data_smallcap_prediction():
+def get_smallcap_prediction():
    prediction_data = {}
    current_date = datetime.datetime.now().strftime('%Y-%m-%d')
-   days = 10
+   fdays = 10
+   if request.args.get('fdays'):
+      fdays = int(request.args.get('fdays'))
+      
+   pastdays = 0
+   if request.args.get('days'):
+      pastdays = int(request.args.get('days'))
+   
    for cmp in niftySmallCap50:
-      prediction_data[cmp] = prediction(cmp,current_date,days)
+      future = json.loads(prediction(cmp,current_date,fdays))
+
+      if pastdays:
+         past = json.loads(retrieve_data(company_name=cmp,date=current_date,days=pastdays))
+      prediction_data[cmp] = {"future":future,"past":past}
    json_data = jsonify(prediction_data) 
    return  json_data
 
@@ -196,8 +225,15 @@ def get_data_company_prediction():
    current_date = datetime.datetime.now().strftime('%Y-%m-%d')
    # print(current_date)
    company_name = request.args.get("company_name")
-   days = int(request.args.get("days"))
-   prediction_data[current_date] = prediction(company_name,current_date,days)
+   fdays = 10
+   if request.args.get("fdays"):
+      fdays =int(request.args.get("fdays"))
+   pdays = 0
+   if request.args.get("pdays"):
+      pdays = int(request.args.get("pdays"))
+   future = json.loads(prediction(company_name,current_date,fdays))
+   past = json.load(retrieve_data(date=current_date,company_name=company_name,days=pdays))
+   prediction[company_name] = {"future" : future , "past" : past}
    json_data = jsonify(prediction_data) 
    return  json_data
    
