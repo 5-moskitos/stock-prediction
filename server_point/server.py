@@ -75,7 +75,7 @@ def get_data_NIFTY_sigmoid():
    sorted_list_desc = sorted_list_desc[0:10]
    values = np.array([item[1] for item in sorted_list_desc])
    print(values)
-   exp_values = np.exp(values)  # Subtracting the max value for numerical stability
+   exp_values = np.exp(values-max(values))  # Subtracting the max value for numerical stability
    probabilities = exp_values / np.sum(exp_values)
    print(probabilities)
    result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
@@ -111,7 +111,7 @@ def get_small_cap_sigmoid():
    sorted_list_desc = sorted_list_desc[0:10]
    values = np.array([item[1] for item in sorted_list_desc])
    print(values)
-   exp_values = np.exp(values)  # Subtracting the max value for numerical stability
+   exp_values = np.exp(values-max(values))  # Subtracting the max value for numerical stability
    probabilities = exp_values / np.sum(exp_values)
    print(probabilities)
    result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
@@ -142,7 +142,7 @@ def get_mid_cap_sigmoid():
    # print(sorted_list_desc)
    sorted_list_desc = sorted_list_desc[0:10]
    values = np.array([item[1] for item in sorted_list_desc])
-   exp_values = np.exp(values)  # Subtracting the max value for numerical stability
+   exp_values = np.exp(values-max(values))  # Subtracting the max value for numerical stability
    probabilities = exp_values / np.sum(exp_values)
    result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
    final_return_val = {"prob":[],"comp":[],"cur_price":[]}
@@ -164,8 +164,8 @@ def get_midcap_prediction():
    if request.args.get('fdays'):
       fdays = int(request.args.get('fdays'))
    pastdays = 0
-   if request.args.get('days'):
-      pastdays = int(request.args.get('days'))
+   if request.args.get('pdays'):
+      pastdays = int(request.args.get('pdays'))
    
    for cmp in niftyMidCap50:
       future = json.loads(prediction(cmp,current_date,fdays))
@@ -196,8 +196,8 @@ def get_smallcap_prediction():
       fdays = int(request.args.get('fdays'))
       
    pastdays = 0
-   if request.args.get('days'):
-      pastdays = int(request.args.get('days'))
+   if request.args.get('pdays'):
+      pastdays = int(request.args.get('pdays'))
    
    for cmp in niftySmallCap50:
       future = json.loads(prediction(cmp,current_date,fdays))
@@ -232,7 +232,7 @@ def get_data_company_prediction():
    if request.args.get("pdays"):
       pdays = int(request.args.get("pdays"))
    future = json.loads(prediction(company_name,current_date,fdays))
-   past = json.load(retrieve_data(date=current_date,company_name=company_name,days=pdays))
+   past = json.loads(retrieve_data(date=current_date,company_name=company_name,days=pdays))
    prediction[company_name] = {"future" : future , "past" : past}
    json_data = jsonify(prediction_data) 
    return  json_data
@@ -245,7 +245,7 @@ def get_current_data():
    retrieved_data = {}
    current_date = datetime.datetime.now().strftime('%Y-%m-%d')
    # for cmp in nifty50:
-   retrieved_data[companyname] = retrieve_data(company_name=companyname,date=current_date,days=days)
+   retrieved_data[companyname] = json.loads(retrieve_data(company_name=companyname,date=current_date,days=days))
    json_data = jsonify(retrieved_data) 
    return  json_data
 
@@ -287,7 +287,7 @@ class small_cap_sigmoidresource(Resource):
       sorted_list_desc = sorted_list_desc[0:10]
       values = np.array([item[1] for item in sorted_list_desc])
       print(values)
-      exp_values = np.exp(values)  # Subtracting the max value for numerical stability
+      exp_values = np.exp(values-max(values)) # Subtracting the max value for numerical stability
       probabilities = exp_values / np.sum(exp_values)
       print(probabilities)
       result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
@@ -320,7 +320,7 @@ class mid_cap_sigmoidresource(Resource):
       # print(sorted_list_desc)
       sorted_list_desc = sorted_list_desc[0:10]
       values = np.array([item[1] for item in sorted_list_desc])
-      exp_values = np.exp(values)  # Subtracting the max value for numerical stability
+      exp_values = np.exp(values-max(values)) # Subtracting the max value for numerical stability
       probabilities = exp_values / np.sum(exp_values)
       result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
       final_return_val = {"prob":[],"comp":[],"cur_price":[]}
@@ -386,7 +386,7 @@ class NIFTY50sigmoidResource(Resource):
          sorted_list_desc = sorted(profit.items(), key=lambda item: item[1], reverse=True)
          sorted_list_desc = sorted_list_desc[0:10]
          values = np.array([item[1] for item in sorted_list_desc])
-         exp_values = np.exp(values)  # Subtracting the max value for numerical stability
+         exp_values = np.exp(values-max(values)) # Subtracting the max value for numerical stability
          probabilities = exp_values / np.sum(exp_values)
          result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
          final_return_val = {"prob":[],"comp":[],"cur_price":[]}
