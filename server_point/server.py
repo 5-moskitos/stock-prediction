@@ -39,6 +39,17 @@ def get_data_NIFTY_prediction():
    json_data = jsonify(prediction_data) 
    return  json_data
 
+@app.route("/get_NIFTY_50_data",methods = ['GET','POST'])
+def get_NIFTY_50_data():
+   days = int(request.args.get('days'))
+   # companyname = request.args.get('company_name')
+   retrieved_data = {}
+   current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+   for cmp in nifty50:
+      retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=days))
+   json_data = jsonify(retrieved_data) 
+   return  json_data
+
 @app.route("/get_NIFTY_50_sigmoid",methods = ['GET','POST'])
 def get_data_NIFTY_sigmoid():
    retrieved_data = {}
