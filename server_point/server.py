@@ -36,7 +36,7 @@ def get_data_NIFTY_prediction():
   
    for cmp in nifty50:
       prediction_data[cmp] = prediction(cmp,current_date,days)
-   json_data = json.dumps(prediction_data) 
+   json_data = jsonify(prediction_data) 
    return  json_data
 
 @app.route("/get_NIFTY_50_sigmoid",methods = ['GET','POST'])
@@ -70,7 +70,7 @@ def get_data_NIFTY_sigmoid():
 
    # print(f"cur : {retrieved_data['ADANIPORTS']}, prediction_data : {prediction_data['ADANIPORTS'][-1]} , {profit['ADANIPORTS']}")
    # print(f"curr : {retrieved_data['ADANIPORTS']}, {type(retrieved_data['ADANIPORTS'][0]['Close'])}, prediction_data : {prediction_data['ADANIPORTS'][-1]} , {type(prediction_data['ADANIPORTS'])}")
-   json_data = json.dumps(final_return_val) 
+   json_data = jsonify(final_return_val) 
       # print(json_data)
    return json_data
 
@@ -104,7 +104,7 @@ def get_small_cap_sigmoid():
       final_return_val['comp'].append(comp)
       final_return_val['cur_price'].append(cur_price)
 
-   json_data = json.dumps(final_return_val) 
+   json_data = jsonify(final_return_val) 
    return json_data
 
 @app.route("/get_mid_cap_sigmoid",methods = ['GET','POST'])
@@ -134,7 +134,7 @@ def get_mid_cap_sigmoid():
       final_return_val['comp'].append(comp)
       final_return_val['cur_price'].append(cur_price)
 
-   json_data = json.dumps(final_return_val) 
+   json_data = jsonify(final_return_val) 
    return json_data
 
 @app.route("/get_data_midcap_prediction",methods = ['GET','POST'])
@@ -144,7 +144,7 @@ def get_data_midcap_prediction():
    days = 10
    for cmp in niftyMidCap50:
       prediction_data[cmp] = prediction(cmp,current_date,days)
-   json_data = json.dumps(prediction_data) 
+   json_data = jsonify(prediction_data) 
    return  json_data
 
 
@@ -155,7 +155,7 @@ def get_data_smallcap_prediction():
    days = 10
    for cmp in niftySmallCap50:
       prediction_data[cmp] = prediction(cmp,current_date,days)
-   json_data = json.dumps(prediction_data) 
+   json_data = jsonify(prediction_data) 
    return  json_data
 
 
@@ -168,8 +168,9 @@ def get_data_company_prediction():
    company_name = request.args.get("company_name")
    days = int(request.args.get("days"))
    prediction_data[current_date] = prediction(company_name,current_date,days)
-   json_data = json.dumps(prediction_data) 
+   json_data = jsonify(prediction_data) 
    return  json_data
+   
 
 @app.route("/get_current_data",methods = ['GET','POST'])
 def get_current_data():
@@ -179,7 +180,7 @@ def get_current_data():
    current_date = datetime.datetime.now().strftime('%Y-%m-%d')
    # for cmp in nifty50:
    retrieved_data[companyname] = retrieve_data(company_name=companyname,date=current_date,days=days)
-   json_data = json.dumps(retrieved_data) 
+   json_data = jsonify(retrieved_data) 
    return  json_data
 
 @app.route("/finetune",methods=['GET'])
@@ -232,7 +233,7 @@ class small_cap_sigmoidresource(Resource):
          final_return_val['comp'].append(comp)
          final_return_val['cur_price'].append(cur_price)
 
-      json_data = json.dumps(final_return_val) 
+      json_data = jsonify(final_return_val) 
       return json_data
 
 @api.route("/get_mid_cap_sigmoid")
@@ -264,7 +265,7 @@ class mid_cap_sigmoidresource(Resource):
          final_return_val['comp'].append(comp)
          final_return_val['cur_price'].append(cur_price)
 
-      json_data = json.dumps(final_return_val) 
+      json_data = jsonify(final_return_val) 
       return json_data
 
 @api.route('/finetune')
@@ -296,7 +297,7 @@ class NIFTY50PredictionResource(Resource):
          for cmp in nifty50:
             if count == 0:
                prediction_data[cmp] = prediction(cmp, current_date, days)
-         json_data = json.dumps(prediction_data) 
+         json_data = jsonify(prediction_data) 
          print(json_data)
          return json_data, 200
 
@@ -332,7 +333,7 @@ class NIFTY50sigmoidResource(Resource):
 
          # print(f"cur : {retrieved_data['ADANIPORTS']}, prediction_data : {prediction_data['ADANIPORTS'][-1]} , {profit['ADANIPORTS']}")
          # print(f"curr : {retrieved_data['ADANIPORTS']}, {type(retrieved_data['ADANIPORTS'][0]['Close'])}, prediction_data : {prediction_data['ADANIPORTS'][-1]} , {type(prediction_data['ADANIPORTS'])}")
-         json_data = json.dumps(final_return_val) 
+         json_data = jsonify(final_return_val) 
             # print(json_data)
          return json_data, 200
 
@@ -345,7 +346,7 @@ class midcapPredictionResource(Resource):
          for cmp in niftyMidCap50:
             if count == 0:
                midcap_prediction_data[cmp] = prediction(cmp, current_date, days)
-         json_data = json.dumps(midcap_prediction_data)
+         json_data = jsonify(midcap_prediction_data)
          print(json_data)
          return json_data, 200
      
@@ -360,15 +361,15 @@ class smallcapPredictionResource(Resource):
             if count == 0:
                smallcap_prediction_data[cmp] = prediction(cmp, current_date, days)
            
-         json_data = json.dumps(smallcap_prediction_data)
+         json_data = jsonify(smallcap_prediction_data)
          # print(json_data) 
          return json_data, 200
       
 @api.route("/post_current_data")
 class Companyretrive_cur_dataResource(Resource):
    def get(self):
-      # days = int(request.args.get('days'))
-      days = 7
+      days = int(request.args.get('days'))
+      # days = 7
       print(request.args.get('days'))
       companyname = request.args.get('company_name')
       print(companyname)
@@ -376,7 +377,7 @@ class Companyretrive_cur_dataResource(Resource):
       current_date = datetime.datetime.now().strftime('%Y-%m-%d')
       # for cmp in nifty50:
       retrieved_data[companyname] = retrieve_data(company_name=companyname,date=current_date,days=days)
-      json_data = json.dumps(retrieved_data) 
+      json_data = jsonify(retrieved_data) 
       return  json_data,200
 
 
@@ -389,10 +390,10 @@ class CompanyPredictionResource(Resource):
         days = api.payload.get("days")
         Company_prediction_data[current_date] = prediction(company_name, current_date, days)
         print(Company_prediction_data)
-        json_data_company = json.dumps(Company_prediction_data) 
+        json_data_company = jsonify(Company_prediction_data) 
         return json_data_company, 200
 
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=8000)
