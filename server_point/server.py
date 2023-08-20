@@ -25,8 +25,24 @@ niftySmallCap50 = ['LATENTVIEW', 'JUBLINGREA', 'MANAPPURAM', 'BSOFT', 'CHAMBLFER
 app.config['SECRET_KEY']='0331a5c84e4e1924170f'
 
 
-count = 0
+store_prediction = {}
 
+@app.route("/store_predictions",methods = ["GET","POST"])
+def store_predictions():
+   store_predictions.clear()
+   current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+   fdays = 10
+   pastdays = 100
+   companyes = [nifty50,niftyMidCap50,niftySmallCap50]
+   for groups in companyes:
+      for cmp in groups:
+         if cmp not in store_predictions:
+                  future = json.loads(prediction(cmp,current_date,fdays))
+                  past = json.loads(retrieve_data(company_name=cmp,date=current_date,days=pastdays))
+                  store_predictions[cmp] = {"future":future,"past":past}
+   return "done"
+             
+   
 @app.route("/get_data_NIFTY_50_prediction",methods = ['GET','POST'])
 def get_NIFTY_50_prediction():
    prediction_data = {}
@@ -40,9 +56,9 @@ def get_NIFTY_50_prediction():
       pastdays = int(request.args.get('pdays'))
    
    for cmp in nifty50:
-      future = json.loads(prediction(cmp,current_date,fdays))
+      future = store_prediction[cmp]['future'][:fdays]
       if pastdays:
-         past = json.loads(retrieve_data(company_name=cmp,date=current_date,days=pastdays))
+         past = store_prediction[cmp]['past'][:pastdays]
       prediction_data[cmp] = {"future":future,"past":past}
    json_data = jsonify(prediction_data) 
    return  json_data
@@ -75,7 +91,7 @@ def get_data_NIFTY_sigmoid():
    sorted_list_desc = sorted_list_desc[0:10]
    values = np.array([item[1] for item in sorted_list_desc])
    print(values)
-   exp_values = np.exp(values-max(values))  # Subtracting the max value for numerical stability
+   exp_values = np.exp(values-np.max(values))  # Subtracting the np.max value for numerical stability
    probabilities = exp_values / np.sum(exp_values)
    print(probabilities)
    result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
@@ -111,7 +127,7 @@ def get_small_cap_sigmoid():
    sorted_list_desc = sorted_list_desc[0:10]
    values = np.array([item[1] for item in sorted_list_desc])
    print(values)
-   exp_values = np.exp(values-max(values))  # Subtracting the max value for numerical stability
+   exp_values = np.exp(values-np.max(values))  # Subtracting the np.max value for numerical stability
    probabilities = exp_values / np.sum(exp_values)
    print(probabilities)
    result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
@@ -142,7 +158,7 @@ def get_mid_cap_sigmoid():
    # print(sorted_list_desc)
    sorted_list_desc = sorted_list_desc[0:10]
    values = np.array([item[1] for item in sorted_list_desc])
-   exp_values = np.exp(values-max(values))  # Subtracting the max value for numerical stability
+   exp_values = np.exp(values-np.max(values))  # Subtracting the np.max value for numerical stability
    probabilities = exp_values / np.sum(exp_values)
    result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
    final_return_val = {"prob":[],"comp":[],"cur_price":[]}
@@ -168,13 +184,13 @@ def get_midcap_prediction():
       pastdays = int(request.args.get('pdays'))
    
    for cmp in niftyMidCap50:
-      future = json.loads(prediction(cmp,current_date,fdays))
-
+      future = store_prediction[cmp]['future'][:fdays]
       if pastdays:
-         past = json.loads(retrieve_data(company_name=cmp,date=current_date,days=pastdays))
+         past = store_prediction[cmp]['past'][:pastdays]
       prediction_data[cmp] = {"future":future,"past":past}
    json_data = jsonify(prediction_data) 
    return  json_data
+
 
 @app.route("/get_midcap_data",methods = ['GET','POST'])
 def get_midcap_data():
@@ -200,10 +216,9 @@ def get_smallcap_prediction():
       pastdays = int(request.args.get('pdays'))
    
    for cmp in niftySmallCap50:
-      future = json.loads(prediction(cmp,current_date,fdays))
-
+      future = store_prediction[cmp]['future'][:fdays]
       if pastdays:
-         past = json.loads(retrieve_data(company_name=cmp,date=current_date,days=pastdays))
+         past = store_prediction[cmp]['past'][:pastdays]
       prediction_data[cmp] = {"future":future,"past":past}
    json_data = jsonify(prediction_data) 
    return  json_data
@@ -228,14 +243,16 @@ def get_data_company_prediction():
    fdays = 10
    if request.args.get("fdays"):
       fdays =int(request.args.get("fdays"))
-   pdays = 0
+   pastdays = 0
    if request.args.get("pdays"):
-      pdays = int(request.args.get("pdays"))
-   future = json.loads(prediction(company_name,current_date,fdays))
-   past = json.loads(retrieve_data(date=current_date,company_name=company_name,days=pdays))
-   prediction[company_name] = {"future" : future , "past" : past}
+      pastdays = int(request.args.get("pdays"))
+   future = store_prediction[company_name]['future'][:fdays]
+   if pastdays:
+         past = store_prediction[company_name]['past'][:pastdays]
+   prediction_data[company_name] = {"future":future,"past":past}
    json_data = jsonify(prediction_data) 
    return  json_data
+
    
 
 @app.route("/get_current_data",methods = ['GET','POST'])
@@ -287,7 +304,7 @@ class small_cap_sigmoidresource(Resource):
       sorted_list_desc = sorted_list_desc[0:10]
       values = np.array([item[1] for item in sorted_list_desc])
       print(values)
-      exp_values = np.exp(values-max(values)) # Subtracting the max value for numerical stability
+      exp_values = np.exp(values-np.max(values)) # Subtracting the np.max value for numerical stability
       probabilities = exp_values / np.sum(exp_values)
       print(probabilities)
       result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
@@ -320,7 +337,7 @@ class mid_cap_sigmoidresource(Resource):
       # print(sorted_list_desc)
       sorted_list_desc = sorted_list_desc[0:10]
       values = np.array([item[1] for item in sorted_list_desc])
-      exp_values = np.exp(values-max(values)) # Subtracting the max value for numerical stability
+      exp_values = np.exp(values-np.max(values)) # Subtracting the np.max value for numerical stability
       probabilities = exp_values / np.sum(exp_values)
       result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
       final_return_val = {"prob":[],"comp":[],"cur_price":[]}
@@ -386,7 +403,7 @@ class NIFTY50sigmoidResource(Resource):
          sorted_list_desc = sorted(profit.items(), key=lambda item: item[1], reverse=True)
          sorted_list_desc = sorted_list_desc[0:10]
          values = np.array([item[1] for item in sorted_list_desc])
-         exp_values = np.exp(values-max(values)) # Subtracting the max value for numerical stability
+         exp_values = np.exp(values-np.max(values)) # Subtracting the np.max value for numerical stability
          probabilities = exp_values / np.sum(exp_values)
          result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
          final_return_val = {"prob":[],"comp":[],"cur_price":[]}
