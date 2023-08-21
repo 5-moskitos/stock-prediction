@@ -65,13 +65,15 @@ def get_NIFTY_50_prediction():
    pastdays = 0
    if request.args.get('pdays'):
       pastdays = int(request.args.get('pdays'))
+      print(pastdays)
    
    past = []
    future  = []
    for cmp in nifty50:
       future = store_prediction[cmp]['future'][:fdays]
       if pastdays:
-         past = store_prediction[cmp]['past'][100-pastdays:]
+         past = store_prediction[cmp]['past'][99-pastdays:]
+         print(past)
          past.reverse()
       prediction_data[cmp] = {"future":future,"past":past}
    json_data = jsonify(prediction_data) 
@@ -83,10 +85,12 @@ def get_NIFTY_50_data():
    pastdays = 10
    if request.args.get('pdays'):
       pastdays = int(request.args.get('pdays'))
+      print(pastdays)
    retrieved_data = {}
    current_date = datetime.datetime.now().strftime('%Y-%m-%d')
    for cmp in nifty50:
-      past = store_prediction[cmp]['past'][100-pastdays:]
+      past = store_prediction[cmp]['past'][99-pastdays:]
+      print(f"past {past}")
       past.reverse()
       retrieved_data[cmp] = past
    json_data = jsonify(retrieved_data) 
@@ -226,7 +230,7 @@ def get_midcap_prediction():
    for cmp in niftyMidCap50:
       future = store_prediction[cmp]['future'][:fdays]
       if pastdays:
-         past = store_prediction[cmp]['past'][100-pastdays:]
+         past = store_prediction[cmp]['past'][99-pastdays:]
          past.reverse()
       prediction_data[cmp] = {"future":future,"past":past}
    json_data = jsonify(prediction_data) 
@@ -242,7 +246,7 @@ def get_midcap_data():
    retrieved_data = {}
    for cmp in niftyMidCap50:
       
-      past = store_prediction[cmp]['past'][100-pastdays:]
+      past = store_prediction[cmp]['past'][99-pastdays:]
       past.reverse()
       retrieved_data[cmp] = past
    json_data = jsonify(retrieved_data) 
@@ -265,7 +269,7 @@ def get_smallcap_prediction():
    for cmp in niftySmallCap50:
       future = store_prediction[cmp]['future'][:fdays]
       if pastdays:
-         past = store_prediction[cmp]['past'][100-pastdays:]
+         past = store_prediction[cmp]['past'][99-pastdays:]
          past.reverse()
       prediction_data[cmp] = {"future":future,"past":past}
    json_data = jsonify(prediction_data) 
@@ -279,7 +283,7 @@ def get_smallcap_data():
       pastdays = int(request.args.get('pdays'))
    retrieved_data = {}
    for cmp in niftySmallCap50:
-      past =  store_prediction[cmp]['past'][100-pastdays:]
+      past =  store_prediction[cmp]['past'][99-pastdays:]
       past.reverse()
       retrieved_data[cmp] = past
    json_data = jsonify(retrieved_data) 
@@ -302,7 +306,7 @@ def get_data_company_prediction():
       pastdays = int(request.args.get("pdays"))
    future = store_prediction[company_name]['future'][:fdays]
    if pastdays:
-         past = store_prediction[company_name]['past'][100-pastdays:]
+         past = store_prediction[company_name]['past'][99-pastdays:]
          past.reverse()
    prediction_data[company_name] = {"future":future,"past":past}
    json_data = jsonify(prediction_data) 
@@ -319,7 +323,7 @@ def get_current_data():
    companyname = request.args.get('company_name')
    retrieved_data = {}
    # current_date = datetime.datetime.now().strftime('%Y-%m-%d')
-   past = store_prediction[companyname]['past'][100-pastdays:]
+   past = store_prediction[companyname]['past'][99-pastdays:]
    past.reverse()
    retrieved_data[companyname] = past
    json_data = jsonify(retrieved_data) 
