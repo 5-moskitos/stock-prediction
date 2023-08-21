@@ -40,11 +40,23 @@ def store_predictions():
                   future = json.loads(prediction(cmp,current_date,fdays))
                   past = json.loads(retrieve_data(company_name=cmp,date=current_date,days=pastdays))
                   store_prediction[cmp] = {"future":future,"past":past}
+   save_file=open("save.json","w")
+   json.dump(store_prediction,save_file)
+   save_file.close()
    return "done"
              
-   
+@app.route("/load_stored_predictions")
+def load_pred():
+   # Open and read the JSON file
+   global store_prediction
+   with open("save.json", 'r') as json_file:
+      store_prediction = json.load(json_file)
+   # =json.load("save.json")
+   return("done")
+
 @app.route("/get_data_NIFTY_50_prediction",methods = ['GET','POST'])
 def get_NIFTY_50_prediction():
+   load_pred()
    prediction_data = {}
    current_date = datetime.datetime.now().strftime('%Y-%m-%d')
    fdays = 10
@@ -54,11 +66,13 @@ def get_NIFTY_50_prediction():
    pastdays = 0
    if request.args.get('pdays'):
       pastdays = int(request.args.get('pdays'))
-   
+   past=[]
+   future =[]
    for cmp in nifty50:
-      future = store_prediction[cmp]['future'][:fdays]
+      future = store_prediction[cmp]['future'][10-fdays:]
       if pastdays:
-         past = store_prediction[cmp]['past'][:pastdays]
+         past = store_prediction[cmp]['past'][100-pastdays:]
+         past.reverse()
       prediction_data[cmp] = {"future":future,"past":past}
    json_data = jsonify(prediction_data) 
    return  json_data
@@ -83,16 +97,20 @@ def get_data_NIFTY_sigmoid():
    current_date = datetime.datetime.now().strftime('%Y-%m-%d')
    for cmp in nifty50:
       retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=1))
-      prediction_data[cmp] = json.loads(prediction(cmp,current_date,days))
-      profit[cmp] = int(prediction_data[cmp][-1]) - int(retrieved_data[cmp][0]['Close'])
+      prediction_data[cmp] = json.loads(prediction(cmp,current_date,1))
+      x = int(prediction_data[cmp][-1]) - int(retrieved_data[cmp][0]['Close'])
+      if x > 0:
+         profit[cmp] = x
       
    sorted_list_desc = sorted(profit.items(), key=lambda item: item[1], reverse=True)
    # print(sorted_list_desc)
-   sorted_list_desc = sorted_list_desc[0:10]
+   size = min(len(sorted_list_desc),10)
+   sorted_list_desc = sorted_list_desc[0:size]
    values = np.array([item[1] for item in sorted_list_desc])
    print(values)
-   exp_values = np.exp(values-np.max(values))  # Subtracting the np.max value for numerical stability
+   exp_values = values  # Subtracting the np.max value for numerical stability
    probabilities = exp_values / np.sum(exp_values)
+   print(f"psum : {np.sum(probabilities)}")
    print(probabilities)
    result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
    final_return_val = {"prob":[],"comp":[],"cur_price":[]}
@@ -127,7 +145,7 @@ def get_small_cap_sigmoid():
    sorted_list_desc = sorted_list_desc[0:10]
    values = np.array([item[1] for item in sorted_list_desc])
    print(values)
-   exp_values = np.exp(values-np.max(values))  # Subtracting the np.max value for numerical stability
+   exp_values = np.exp(values)  # Subtracting the np.max value for numerical stability
    probabilities = exp_values / np.sum(exp_values)
    print(probabilities)
    result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
@@ -177,6 +195,8 @@ def get_midcap_prediction():
    prediction_data = {}
    current_date = datetime.datetime.now().strftime('%Y-%m-%d')
    fdays = 10
+   past=[]
+   future =[]
    if request.args.get('fdays'):
       fdays = int(request.args.get('fdays'))
    pastdays = 0
@@ -208,6 +228,8 @@ def get_smallcap_prediction():
    prediction_data = {}
    current_date = datetime.datetime.now().strftime('%Y-%m-%d')
    fdays = 10
+   past=[]
+   future =[]
    if request.args.get('fdays'):
       fdays = int(request.args.get('fdays'))
       
@@ -216,9 +238,9 @@ def get_smallcap_prediction():
       pastdays = int(request.args.get('pdays'))
    
    for cmp in niftySmallCap50:
-      future = store_prediction[cmp]['future'][:fdays]
+      future = store_prediction[cmp]['future'][fdays].reverse()
       if pastdays:
-         past = store_prediction[cmp]['past'][:pastdays]
+         past = store_prediction[cmp]['past'][100-pastdays].reverse()
       prediction_data[cmp] = {"future":future,"past":past}
    json_data = jsonify(prediction_data) 
    return  json_data
@@ -241,6 +263,8 @@ def get_data_company_prediction():
    # print(current_date)
    company_name = request.args.get("company_name")
    fdays = 10
+   past=[]
+   future =[]
    if request.args.get("fdays"):
       fdays =int(request.args.get("fdays"))
    pastdays = 0
