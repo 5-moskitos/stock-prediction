@@ -241,7 +241,10 @@ def get_midcap_data():
       pastdays = int(request.args.get('pdays'))
    retrieved_data = {}
    for cmp in niftyMidCap50:
-      retrieved_data[cmp] = store_prediction[cmp]['past'][100-pastdays:]
+      
+      past = store_prediction[cmp]['past'][100-pastdays:]
+      past.reverse()
+      retrieved_data[cmp] = past
    json_data = jsonify(retrieved_data) 
    return  json_data
 
@@ -263,6 +266,7 @@ def get_smallcap_prediction():
       future = store_prediction[cmp]['future'][:fdays]
       if pastdays:
          past = store_prediction[cmp]['past'][100-pastdays:]
+         past.reverse()
       prediction_data[cmp] = {"future":future,"past":past}
    json_data = jsonify(prediction_data) 
    return  json_data
@@ -275,7 +279,9 @@ def get_smallcap_data():
       pastdays = int(request.args.get('pdays'))
    retrieved_data = {}
    for cmp in niftySmallCap50:
-      retrieved_data[cmp] = store_prediction[cmp]['past'][100-pastdays:]
+      past =  store_prediction[cmp]['past'][100-pastdays:]
+      past.reverse()
+      retrieved_data[cmp] = past
    json_data = jsonify(retrieved_data) 
    return  json_data
 
@@ -296,7 +302,8 @@ def get_data_company_prediction():
       pastdays = int(request.args.get("pdays"))
    future = store_prediction[company_name]['future'][:fdays]
    if pastdays:
-         past = (store_prediction[company_name]['past'][100-pastdays:]).reverse()
+         past = store_prediction[company_name]['past'][100-pastdays:]
+         past.reverse()
    prediction_data[company_name] = {"future":future,"past":past}
    json_data = jsonify(prediction_data) 
    return  json_data
@@ -312,7 +319,9 @@ def get_current_data():
    companyname = request.args.get('company_name')
    retrieved_data = {}
    # current_date = datetime.datetime.now().strftime('%Y-%m-%d')
-   retrieved_data[companyname] = store_prediction[companyname]['past'][100-pastdays:]
+   past = store_prediction[companyname]['past'][100-pastdays:]
+   past.reverse()
+   retrieved_data[companyname] = past
    json_data = jsonify(retrieved_data) 
    return  json_data
 
