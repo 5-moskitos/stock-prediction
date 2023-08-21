@@ -40,11 +40,22 @@ def store_predictions():
                   future = json.loads(prediction(cmp,current_date,fdays))
                   past = json.loads(retrieve_data(company_name=cmp,date=current_date,days=pastdays))
                   store_prediction[cmp] = {"future":future,"past":past}
+                  
+   save_file = file = open("save_data.json","w")
+   json.dump(store_prediction,save_file)
+   save_file.close()
    return "done"
-             
+
+@app.route("/load_predictions")
+def load_prediction():
+   global store_prediction
+   with open("save_data.json","r")as json_file:
+      store_prediction = json.load(json_file)
+   return "done"
    
 @app.route("/get_data_NIFTY_50_prediction",methods = ['GET','POST'])
 def get_NIFTY_50_prediction():
+   load_prediction()
    prediction_data = {}
    current_date = datetime.datetime.now().strftime('%Y-%m-%d')
    fdays = 10
@@ -60,53 +71,65 @@ def get_NIFTY_50_prediction():
    for cmp in nifty50:
       future = store_prediction[cmp]['future'][:fdays]
       if pastdays:
-         past = store_prediction[cmp]['past'][:pastdays]
+         past = store_prediction[cmp]['past'][100-pastdays:]
+         past.reverse()
       prediction_data[cmp] = {"future":future,"past":past}
    json_data = jsonify(prediction_data) 
    return  json_data
 
 @app.route("/get_NIFTY_50_data",methods = ['GET','POST'])
 def get_NIFTY_50_data():
-   days = int(request.args.get('days'))
-   # companyname = request.args.get('company_name')
+   load_prediction()
+   pastdays = 10
+   if request.args.get('pdays'):
+      pastdays = int(request.args.get('pdays'))
    retrieved_data = {}
    current_date = datetime.datetime.now().strftime('%Y-%m-%d')
    for cmp in nifty50:
-      retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=days))
+      past = store_prediction[cmp]['past'][100-pastdays:]
+      past.reverse()
+      retrieved_data[cmp] = past
    json_data = jsonify(retrieved_data) 
    return  json_data
 
 @app.route("/get_NIFTY_50_sigmoid",methods = ['GET','POST'])
 def get_data_NIFTY_sigmoid():
+   load_prediction()
    retrieved_data = {}
-   days = 10
+   fdays = 10
    prediction_data = {}
    profit = {}
    current_date = datetime.datetime.now().strftime('%Y-%m-%d')
    for cmp in nifty50:
-      retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=1))
-      prediction_data[cmp] = json.loads(prediction(cmp,current_date,days))
-      profit[cmp] = int(prediction_data[cmp][-1]) - int(retrieved_data[cmp][0]['Close'])
+      past = store_prediction[cmp]['past'][-1]
+      print(past)
+      # past.reverse()
+      retrieved_data[cmp] = past
+      future = store_prediction[cmp]['future'][:fdays]
+      prediction_data[cmp] = future
+      print(f"prediction_data[cmp] {prediction_data[cmp]}")
+      print(f"retrieved_data[cmp] {retrieved_data[cmp]}")
+      x = int(prediction_data[cmp][-1]) - int(retrieved_data[cmp]['Close'])
+      if x>0:
+         profit[cmp] = x
       
    sorted_list_desc = sorted(profit.items(), key=lambda item: item[1], reverse=True)
-   # print(sorted_list_desc)
-   sorted_list_desc = sorted_list_desc[0:10]
+   size = min(len(sorted_list_desc),10)
+   sorted_list_desc = sorted_list_desc[0:size]
    values = np.array([item[1] for item in sorted_list_desc])
    print(values)
-   exp_values = np.exp(values-np.max(values))  # Subtracting the np.max value for numerical stability
+   exp_values = values  # Subtracting the np.max value for numerical stability
    probabilities = exp_values / np.sum(exp_values)
    print(probabilities)
    result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
    final_return_val = {"prob":[],"comp":[],"cur_price":[]}
    for item in result:
       comp,prob = item
-      cur_price =  retrieved_data[comp][0]['Close']
+      cur_price =  retrieved_data[comp]['Close']
       final_return_val['prob'].append(prob)
       final_return_val['comp'].append(comp)
       final_return_val['cur_price'].append(cur_price)
 
-   # print(f"cur : {retrieved_data['ADANIPORTS']}, prediction_data : {prediction_data['ADANIPORTS'][-1]} , {profit['ADANIPORTS']}")
-   # print(f"curr : {retrieved_data['ADANIPORTS']}, {type(retrieved_data['ADANIPORTS'][0]['Close'])}, prediction_data : {prediction_data['ADANIPORTS'][-1]} , {type(prediction_data['ADANIPORTS'])}")
    json_data = jsonify(final_return_val) 
       # print(json_data)
    return json_data
@@ -114,68 +137,82 @@ def get_data_NIFTY_sigmoid():
 
 @app.route("/get_small_cap_sigmoid",methods = ['GET','POST'])
 def get_small_cap_sigmoid():
-   small_retrieved_data = {}
-   days = 10
-   small_prediction_data = {}
+   load_prediction()
+   retrieved_data = {}
+   fdays = 10
+   prediction_data = {}
    profit = {}
    current_date = datetime.datetime.now().strftime('%Y-%m-%d')
    for cmp in niftySmallCap50:
-      small_retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=1))
-      small_prediction_data[cmp] = json.loads(prediction(cmp,current_date,days))
-      profit[cmp] = int(small_prediction_data[cmp][-1]) - int(small_retrieved_data[cmp][0]['Close'])
-   
+      past = store_prediction[cmp]['past'][-1]
+      # past.reverse()
+      retrieved_data[cmp] = past
+      future = store_prediction[cmp]['future'][:fdays]
+      prediction_data[cmp] = future
+      x = int(prediction_data[cmp][-1]) - int(retrieved_data[cmp]['Close'])
+      if x>0:
+         profit[cmp] = x
+      
    sorted_list_desc = sorted(profit.items(), key=lambda item: item[1], reverse=True)
-   # print(sorted_list_desc)
-   sorted_list_desc = sorted_list_desc[0:10]
+   size = min(len(sorted_list_desc),10)
+   sorted_list_desc = sorted_list_desc[0:size]
+   values = np.array([item[1] for item in sorted_list_desc])
+   exp_values = values  # Subtracting the np.max value for numerical stability
+   probabilities = exp_values / np.sum(exp_values)
+   result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
+   final_return_val = {"prob":[],"comp":[],"cur_price":[]}
+   for item in result:
+      comp,prob = item
+      cur_price =  retrieved_data[comp]['Close']
+      final_return_val['prob'].append(prob)
+      final_return_val['comp'].append(comp)
+      final_return_val['cur_price'].append(cur_price)
+
+   json_data = jsonify(final_return_val) 
+      # print(json_data)
+   return json_data
+
+@app.route("/get_mid_cap_sigmoid",methods = ['GET','POST'])
+def get_mid_cap_sigmoid():
+   load_prediction()
+   retrieved_data = {}
+   fdays = 10
+   prediction_data = {}
+   profit = {}
+   # current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+   for cmp in niftyMidCap50:
+      past = store_prediction[cmp]['past'][-1]
+      retrieved_data[cmp] = past
+      future = store_prediction[cmp]['future'][:fdays]
+      prediction_data[cmp] = future
+      x = int(prediction_data[cmp][-1]) - int(retrieved_data[cmp]['Close'])
+      if x>0:
+         profit[cmp] = x
+      
+   sorted_list_desc = sorted(profit.items(), key=lambda item: item[1], reverse=True)
+   size = min(len(sorted_list_desc),10)
+   sorted_list_desc = sorted_list_desc[0:size]
    values = np.array([item[1] for item in sorted_list_desc])
    print(values)
-   exp_values = np.exp(values-np.max(values))  # Subtracting the np.max value for numerical stability
+   exp_values = values  # Subtracting the np.max value for numerical stability
    probabilities = exp_values / np.sum(exp_values)
    print(probabilities)
    result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
    final_return_val = {"prob":[],"comp":[],"cur_price":[]}
    for item in result:
       comp,prob = item
-      cur_price =  small_retrieved_data[comp][0]['Close']
+      cur_price =  retrieved_data[comp]['Close']
       final_return_val['prob'].append(prob)
       final_return_val['comp'].append(comp)
       final_return_val['cur_price'].append(cur_price)
 
    json_data = jsonify(final_return_val) 
-   return json_data
-
-@app.route("/get_mid_cap_sigmoid",methods = ['GET','POST'])
-def get_mid_cap_sigmoid():
-   mid_retrieved_data = {}
-   days = 10
-   mid_prediction_data = {}
-   profit = {}
-   current_date = datetime.datetime.now().strftime('%Y-%m-%d')
-   for cmp in niftyMidCap50:
-      mid_retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=1))
-      mid_prediction_data[cmp] = json.loads(prediction(cmp,current_date,days))
-      profit[cmp] = int(mid_prediction_data[cmp][0]) - int(mid_retrieved_data[cmp][0]['Close'])
-   
-   sorted_list_desc = sorted(profit.items(), key=lambda item: item[1], reverse=True)
-   # print(sorted_list_desc)
-   sorted_list_desc = sorted_list_desc[0:10]
-   values = np.array([item[1] for item in sorted_list_desc])
-   exp_values = np.exp(values-np.max(values))  # Subtracting the np.max value for numerical stability
-   probabilities = exp_values / np.sum(exp_values)
-   result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
-   final_return_val = {"prob":[],"comp":[],"cur_price":[]}
-   for item in result:
-      comp,prob = item
-      cur_price =  mid_retrieved_data[comp][0]['Close']
-      final_return_val['prob'].append(prob)
-      final_return_val['comp'].append(comp)
-      final_return_val['cur_price'].append(cur_price)
-
-   json_data = jsonify(final_return_val) 
+      # print(json_data)
    return json_data
 
 @app.route("/get_data_midcap_prediction",methods = ['GET','POST'])
 def get_midcap_prediction():
+   load_prediction()
    prediction_data = {}
    current_date = datetime.datetime.now().strftime('%Y-%m-%d')
    fdays = 10
@@ -189,7 +226,8 @@ def get_midcap_prediction():
    for cmp in niftyMidCap50:
       future = store_prediction[cmp]['future'][:fdays]
       if pastdays:
-         past = store_prediction[cmp]['past'][:pastdays]
+         past = store_prediction[cmp]['past'][100-pastdays:]
+         past.reverse()
       prediction_data[cmp] = {"future":future,"past":past}
    json_data = jsonify(prediction_data) 
    return  json_data
@@ -197,17 +235,19 @@ def get_midcap_prediction():
 
 @app.route("/get_midcap_data",methods = ['GET','POST'])
 def get_midcap_data():
-   days = int(request.args.get('days'))
-   # companyname = request.args.get('company_name')
+   load_prediction()
+   pastdays = 10
+   if request.args.get('pdays'):
+      pastdays = int(request.args.get('pdays'))
    retrieved_data = {}
-   current_date = datetime.datetime.now().strftime('%Y-%m-%d')
    for cmp in niftyMidCap50:
-      retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=days))
+      retrieved_data[cmp] = store_prediction[cmp]['past'][100-pastdays:]
    json_data = jsonify(retrieved_data) 
    return  json_data
 
 @app.route("/get_data_smallcap_prediction",methods = ['GET','POST'])
 def get_smallcap_prediction():
+   load_prediction()
    prediction_data = {}
    current_date = datetime.datetime.now().strftime('%Y-%m-%d')
    fdays = 10
@@ -222,26 +262,28 @@ def get_smallcap_prediction():
    for cmp in niftySmallCap50:
       future = store_prediction[cmp]['future'][:fdays]
       if pastdays:
-         past = store_prediction[cmp]['past'][:pastdays]
+         past = store_prediction[cmp]['past'][100-pastdays:]
       prediction_data[cmp] = {"future":future,"past":past}
    json_data = jsonify(prediction_data) 
    return  json_data
 
 @app.route("/get_smallcap_data",methods = ['GET','POST'])
 def get_smallcap_data():
-   days = int(request.args.get('days'))
-   # companyname = request.args.get('company_name')
+   load_prediction()
+   pastdays = 10
+   if request.args.get('pdays'):
+      pastdays = int(request.args.get('pdays'))
    retrieved_data = {}
-   current_date = datetime.datetime.now().strftime('%Y-%m-%d')
    for cmp in niftySmallCap50:
-      retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=days))
+      retrieved_data[cmp] = store_prediction[cmp]['past'][100-pastdays:]
    json_data = jsonify(retrieved_data) 
    return  json_data
 
 @app.route("/get_compant_prediction",methods = ['GET','POST'])
 def get_data_company_prediction():
+   load_prediction()
    prediction_data = {}
-   current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+   # current_date = datetime.datetime.now().strftime('%Y-%m-%d')
    # print(current_date)
    company_name = request.args.get("company_name")
    fdays = 10
@@ -254,7 +296,7 @@ def get_data_company_prediction():
       pastdays = int(request.args.get("pdays"))
    future = store_prediction[company_name]['future'][:fdays]
    if pastdays:
-         past = store_prediction[company_name]['past'][:pastdays]
+         past = (store_prediction[company_name]['past'][100-pastdays:]).reverse()
    prediction_data[company_name] = {"future":future,"past":past}
    json_data = jsonify(prediction_data) 
    return  json_data
@@ -263,17 +305,20 @@ def get_data_company_prediction():
 
 @app.route("/get_current_data",methods = ['GET','POST'])
 def get_current_data():
-   days = int(request.args.get('days'))
+   load_prediction()
+   pastdays = 10
+   if request.args.get('pdays'):
+      pastdays =int(request.args.get('pdays'))
    companyname = request.args.get('company_name')
    retrieved_data = {}
-   current_date = datetime.datetime.now().strftime('%Y-%m-%d')
-   # for cmp in nifty50:
-   retrieved_data[companyname] = json.loads(retrieve_data(company_name=companyname,date=current_date,days=days))
+   # current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+   retrieved_data[companyname] = store_prediction[companyname]['past'][100-pastdays:]
    json_data = jsonify(retrieved_data) 
    return  json_data
 
 @app.route("/finetune",methods=['GET'])
 def finetune_models():
+      # load_prediction()
       # Get the current date
       current_date = datetime.datetime.now()
       # Calculate the previous day's date
@@ -290,193 +335,6 @@ def finetune_models():
          for cmp in groups:
             fine_tune(date=formatted_date,company_name=cmp)
       return "done"
-
-@api.route("/get_small_cap_sigmoid")
-class small_cap_sigmoidresource(Resource):
-   def get():
-      small_retrieved_data = {}
-      days = 10
-      small_prediction_data = {}
-      profit = {}
-      current_date = datetime.datetime.now().strftime('%Y-%m-%d')
-      for cmp in niftySmallCap50:
-         small_retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=1))
-         small_prediction_data[cmp] = json.loads(prediction(cmp,current_date,days))
-         profit[cmp] = int(small_prediction_data[cmp][0]) - int(small_retrieved_data[cmp][0]['Close'])
-
-      sorted_list_desc = sorted(profit.items(), key=lambda item: item[1], reverse=True)
-      # print(sorted_list_desc)
-      sorted_list_desc = sorted_list_desc[0:10]
-      values = np.array([item[1] for item in sorted_list_desc])
-      print(values)
-      exp_values = np.exp(values-np.max(values)) # Subtracting the np.max value for numerical stability
-      probabilities = exp_values / np.sum(exp_values)
-      print(probabilities)
-      result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
-      final_return_val = {"prob":[],"comp":[],"cur_price":[]}
-      for item in result:
-         comp,prob = item
-         cur_price =  small_retrieved_data[comp][0]['Close']
-         final_return_val['prob'].append(prob)
-         final_return_val['comp'].append(comp)
-         final_return_val['cur_price'].append(cur_price)
-
-      json_data = jsonify(final_return_val) 
-      return json_data
-
-@api.route("/get_mid_cap_sigmoid")
-class mid_cap_sigmoidresource(Resource):
-   def get():
-      mid_retrieved_data = {}
-      days = 10
-      mid_prediction_data = {}
-      profit = {}
-      current_date = datetime.datetime.now().strftime('%Y-%m-%d')
-      for cmp in niftyMidCap50:
-         mid_retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=1))
-         mid_prediction_data[cmp] = json.loads(prediction(cmp,current_date,days))
-         profit[cmp] = int(mid_prediction_data[cmp][-1]) - int(mid_retrieved_data[cmp][0]['Close'])
-   
-      sorted_list_desc = sorted(profit.items(), key=lambda item: item[1], reverse=True)
-      # print(sorted_list_desc)
-      sorted_list_desc = sorted_list_desc[0:10]
-      values = np.array([item[1] for item in sorted_list_desc])
-      exp_values = np.exp(values-np.max(values)) # Subtracting the np.max value for numerical stability
-      probabilities = exp_values / np.sum(exp_values)
-      result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
-      final_return_val = {"prob":[],"comp":[],"cur_price":[]}
-      for item in result:
-         comp,prob = item
-         cur_price =  mid_retrieved_data[comp][0]['Close']
-         final_return_val['prob'].append(prob)
-         final_return_val['comp'].append(comp)
-         final_return_val['cur_price'].append(cur_price)
-
-      json_data = jsonify(final_return_val) 
-      return json_data
-
-@api.route('/finetune')
-class finetuneResouce(Resource):
-   def get():
-      # Get the current date
-      current_date = datetime.datetime.now()
-      # Calculate the previous day's date
-      previous_day_date = current_date - datetime.timedelta(days=1)
-      # Format the date as a string
-      formatted_date = previous_day_date.strftime('%Y-%m-%d')
-      args = request.args.get('company_name')
-      if(args):
-         fine_tune(date=formatted_date,company_name=args)
-         return "done"
-      
-      companyes = [nifty50,niftyMidCap50,niftySmallCap50]
-      for groups in companyes:
-         for cmp in groups:
-            fine_tune(date=formatted_date,company_name=cmp)
-      return "done"
-
-@api.route('/get_NIFTY_50_prediction')
-class NIFTY50PredictionResource(Resource):
-    def get(self):
-         prediction_data = {}
-         current_date = datetime.datetime.now().strftime('%Y-%m-%d')
-         days = 10
-         for cmp in nifty50:
-               prediction_data[cmp] = prediction(cmp, current_date, days)
-         json_data = jsonify(prediction_data) 
-         print(json_data)
-         return json_data, 200
-
-
-@api.route('/get_NIFTY_50_sigmoid')
-class NIFTY50sigmoidResource(Resource):
-    def put(self):
-         
-         retrieved_data = {}
-         days = 10
-         prediction_data = {}
-         profit = {}
-         current_date = datetime.datetime.now().strftime('%Y-%m-%d')
-         for cmp in nifty50:
-            retrieved_data[cmp] = json.loads(retrieve_data(company_name=cmp,date=current_date,days=1))
-            prediction_data[cmp] = json.loads(prediction(cmp,current_date,days))
-            profit[cmp] = int(prediction_data[cmp][-1]) - int(retrieved_data[cmp][0]['Close'])
-      
-         sorted_list_desc = sorted(profit.items(), key=lambda item: item[1], reverse=True)
-         sorted_list_desc = sorted_list_desc[0:10]
-         values = np.array([item[1] for item in sorted_list_desc])
-         exp_values = np.exp(values-np.max(values)) # Subtracting the np.max value for numerical stability
-         probabilities = exp_values / np.sum(exp_values)
-         result = [(sorted_list_desc[i][0], probabilities[i]) for i in range(len(sorted_list_desc))]
-         final_return_val = {"prob":[],"comp":[],"cur_price":[]}
-         for item in result:
-            comp,prob = item
-            cur_price =  retrieved_data[comp][0]['Close']
-            final_return_val['prob'].append(prob)
-            final_return_val['comp'].append(comp)
-            final_return_val['cur_price'].append(cur_price)
-
-         # print(f"cur : {retrieved_data['ADANIPORTS']}, prediction_data : {prediction_data['ADANIPORTS'][-1]} , {profit['ADANIPORTS']}")
-         # print(f"curr : {retrieved_data['ADANIPORTS']}, {type(retrieved_data['ADANIPORTS'][0]['Close'])}, prediction_data : {prediction_data['ADANIPORTS'][-1]} , {type(prediction_data['ADANIPORTS'])}")
-         json_data = jsonify(final_return_val) 
-            # print(json_data)
-         return json_data, 200
-
-@api.route('/get_data_midcap_prediction')
-class midcapPredictionResource(Resource):
-    def get(self):
-         midcap_prediction_data = {}
-         current_date = datetime.datetime.now().strftime('%Y-%m-%d')
-         days = 10
-         for cmp in niftyMidCap50:
-            if count == 0:
-               midcap_prediction_data[cmp] = prediction(cmp, current_date, days)
-         json_data = jsonify(midcap_prediction_data)
-         print(json_data)
-         return json_data, 200
-     
-
-@api.route('/get_data_smallcap_prediction')
-class smallcapPredictionResource(Resource):
-    def get(self):
-         smallcap_prediction_data = {}
-         current_date = datetime.datetime.now().strftime('%Y-%m-%d')
-         days = 10
-         for cmp in niftySmallCap50:
-            if count == 0:
-               smallcap_prediction_data[cmp] = prediction(cmp, current_date, days)
-           
-         json_data = jsonify(smallcap_prediction_data)
-         # print(json_data) 
-         return json_data, 200
-      
-@api.route("/post_current_data")
-class Companyretrive_cur_dataResource(Resource):
-   def get(self):
-      days = int(request.args.get('days'))
-      # days = 7
-      print(request.args.get('days'))
-      companyname = request.args.get('company_name')
-      print(companyname)
-      retrieved_data = {}
-      current_date = datetime.datetime.now().strftime('%Y-%m-%d')
-      # for cmp in nifty50:
-      retrieved_data[companyname] = retrieve_data(company_name=companyname,date=current_date,days=days)
-      json_data = jsonify(retrieved_data) 
-      return  json_data,200
-
-
-@api.route('/get_company_prediction')
-class CompanyPredictionResource(Resource):
-    def get(self):
-        Company_prediction_data = {}
-        current_date = datetime.datetime.now().strftime('%Y-%m-%d')
-        company_name = api.payload.get("company_name")
-        days = api.payload.get("days")
-        Company_prediction_data[current_date] = prediction(company_name, current_date, days)
-        print(Company_prediction_data)
-        json_data_company = jsonify(Company_prediction_data) 
-        return json_data_company, 200
 
 
 
