@@ -55,6 +55,8 @@ def get_NIFTY_50_prediction():
    if request.args.get('pdays'):
       pastdays = int(request.args.get('pdays'))
    
+   past = []
+   future  = []
    for cmp in nifty50:
       future = store_prediction[cmp]['future'][:fdays]
       if pastdays:
@@ -182,7 +184,8 @@ def get_midcap_prediction():
    pastdays = 0
    if request.args.get('pdays'):
       pastdays = int(request.args.get('pdays'))
-   
+   past = []
+   future = []
    for cmp in niftyMidCap50:
       future = store_prediction[cmp]['future'][:fdays]
       if pastdays:
@@ -214,7 +217,8 @@ def get_smallcap_prediction():
    pastdays = 0
    if request.args.get('pdays'):
       pastdays = int(request.args.get('pdays'))
-   
+   future = []
+   past = []
    for cmp in niftySmallCap50:
       future = store_prediction[cmp]['future'][:fdays]
       if pastdays:
@@ -241,6 +245,8 @@ def get_data_company_prediction():
    # print(current_date)
    company_name = request.args.get("company_name")
    fdays = 10
+   future = []
+   past = []
    if request.args.get("fdays"):
       fdays =int(request.args.get("fdays"))
    pastdays = 0
