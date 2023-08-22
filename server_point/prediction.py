@@ -5,9 +5,9 @@ from model import StockPrediction
 import yfinance as yf
 import json
 from datetime import datetime, timedelta
-import sys
+# import sys
 from copy import deepcopy as dc
-from sklearn.preprocessing import MinMaxScaler
+# from sklearn.preprocessing import MinMaxScaler
 import pandas as pd
 
 
@@ -54,6 +54,7 @@ def prediction(company_name, date,  days=60):
     prev_data = prev_data[['Date', 'Close']]
     prev_data['Date'] = pd.to_datetime(prev_data['Date'])
     prev_data['Close'] = prev_data['Close'].astype(float)
+    # print(f" prev_data['Date'] {prev_data['Date']} , prev_data['Close'] : {prev_data['Close']}")
     parameter_file = '../parameters'
     pickle_filename = pickle_file = os.path.join(parameter_file, 'parameters.pkl')
     
@@ -64,13 +65,14 @@ def prediction(company_name, date,  days=60):
     size = parameters_list[0]
     mean = parameters_list[1]
     st_deviation = parameters_list[2]
-
+    
     # print(prev_data)
     prev_data['Close'] = (prev_data['Close']-mean)/st_deviation
-
+    # print(f"prev_data['date'] : {prev_data['Date'].values},prev_data['close'] : {prev_data['Close']} ")
     shifted_df = prepare_dataframe_for_prediction(prev_data, 60)
+    # print(f"shifted_df : {shifted_df}")
     shifted_df_as_np = shifted_df.to_numpy()
-
+    
     X = shifted_df_as_np[:, 1:]
     y = shifted_df_as_np[:, 0]
     X = torch.tensor(X,dtype=torch.float32)
@@ -80,7 +82,7 @@ def prediction(company_name, date,  days=60):
     pkl_file_name = f'{company_name}'
     model_ = load_pickle_file(pickle_directory, pkl_file_name)
     X = X.unsqueeze(-1)
-
+    X = X.transpose(0,2)
     predicted_data = []
 
     if days > 60:
@@ -88,10 +90,10 @@ def prediction(company_name, date,  days=60):
 
     for i in range(days):
         output = model_(X)
-
-        shifted_X = X[:, 1:, :]
-        X = torch.cat((shifted_X, output.unsqueeze(0)), dim=1)
-        output = (output*st_deviation) + mean
+        
+        shifted_X = X[:, :-1, :]
+        X = torch.cat((output.unsqueeze(-1),shifted_X), dim=1)
+        output = ((output*st_deviation) + mean)
         predicted_data.append(output.item())
         
     return json.dumps(predicted_data)
@@ -104,5 +106,5 @@ if __name__  == "__main__":
     company = "AXISBANK"
     current_date = datetime.now().strftime('%Y-%m-%d')
     print(f" {type(current_date)}, {current_date}")
-    # predicted_data = prediction("2023-08-18", company, 10)
-    # print(predicted_data)
+    predicted_data = prediction( company,"2023-08-21", 60)
+    print(predicted_data)

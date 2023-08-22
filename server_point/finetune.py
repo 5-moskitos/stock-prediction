@@ -12,16 +12,19 @@ from sklearn.preprocessing import MinMaxScaler
 import pandas as pd
 
 def load_model(directory, target_filename):
-    pickle_file = os.path.join(directory, f'{target_filename}.NS_data.h5')
-    print(f"pickle_file {pickle_file}")
+    file = f'{target_filename}.NS_data.h5'
+    pickle_file = os.path.join(directory, file)
+    # print(f"pickle_file {pickle_file}")
     
     if os.path.exists(pickle_file):
-        print("valid path")
-        checkpoint = torch.load(pickle_file)
-        return checkpoint
+        # print("valid path")
+        # checkpoint = 
+        return torch.load(pickle_file)
     
     else:
         return None
+    
+
 def store_model(model,directory,target_filename):
     pickle_file = os.path.join(directory, f'{target_filename}.NS_data.h5')
     torch.save(model,pickle_file )
@@ -75,27 +78,27 @@ def fine_tune(date, company_name, days=60):
     pickle_directory = "../path_to_store_pickle_files/"
     pkl_file_name = f'{company_name}'
     model_ = load_model(pickle_directory, pkl_file_name)
-    print(model_)
+    # print(model_)
     loss_function = nn.MSELoss()
     optimizer = torch.optim.Adam(model_.parameters(), lr=learning_rate)
     model_.train()
-    print(X.shape)
-    print(X)
+    # print(X.shape)
+    # print(X)
     X = X.unsqueeze(dim=2)
-    print(f"X.shape : {X.shape}")
+    # print(f"X.shape : {X.shape}")/
     # X = X.transpose(0, 2)
-    print(f"X.shape : {X.shape}")
+    # print(f"X.shape : {X.shape}")
     y = y.unsqueeze(dim=0)
-    print(f"y.shape : {y.shape}")
+    # print(f"y.shape : {y.shape}")
     # y = y.transpose(0, 1)
-    print(f"y.shape : {y.shape}")
-    print(X)
-    print(y)
-    print(X.shape)
-    print(X.dtype)
-    print(y.shape)
+    # print(f"y.shape : {y.shape}")
+    # print(X)
+    # print(y)
+    # print(X.shape)
+    # print(X.dtype)
+    # print(y.shape)
     output = model_(X)
-    print(f"predicted : {output}")
+    print(f"predicted : {output} , true : {y}")
     loss = loss_function(output, y)
     # running_loss += loss.item()
     

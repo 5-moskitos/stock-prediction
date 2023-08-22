@@ -9,6 +9,24 @@ import sys
 device = 'cpu'
 
 
+def load_model(directory, target_filename):
+    file = f'{target_filename}.NS_data.h5'
+    pickle_file = os.path.join(directory, file)
+    print(f"pickle_file {pickle_file}")
+    
+    if os.path.exists(pickle_file):
+        print("valid path")
+        # checkpoint = 
+        return torch.load(pickle_file)
+    
+    else:
+        return None
+    
+
+def store_model(model,directory,target_filename):
+    pickle_file = os.path.join(directory, f'{target_filename}.NS_data.h5')
+    torch.save(model,pickle_file )
+
 class StockPrediction(nn.Module):
     def __init__(self, input_size,hidden_size, num_stacked_layers):
         super().__init__()
@@ -98,12 +116,16 @@ def main():
     # Create a directory for pickle files
     pickle_directory = 'path_to_store_pickle_files'
     os.makedirs(pickle_directory, exist_ok=True)
-
-    for file in os.listdir('.'):
+    path = "/home/siddhant/3.SEM/Stock_Prediction/git/Ai-trade/database/stock_data"
+    for file in os.listdir(path):
         if file.endswith('.csv'):
-            train_loader, test_loader = create_dataloader(file, batch_size, lookback)
-            model = StockPrediction(input_size, hidden_size,num_layers)
-            model.to(device)
+            csvfile_path = os.path.join(path,file)
+            train_loader, test_loader = create_dataloader(csvfile_path, batch_size, lookback)
+            # model = StockPrediction(input_size, hidden_size,num_layers)
+            # model.to(device)
+            pickle_directory = "../path_to_store_pickle_files/"
+            model_name = file.split(".NS")[0]
+            model = load_model(pickle_directory,model_name)
             loss_function = nn.MSELoss()
             optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
             for epoch in range(num_epochs):

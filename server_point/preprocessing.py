@@ -24,7 +24,7 @@ def prepare_dataframe_for_lstm(df, n_steps):
 
 def preprocessing(csv_file_path, lookback):
     parameters = {}
-    parameters_directory = "./parameters"
+    parameters_directory = "../parameters"
 
     if not os.path.exists(parameters_directory+'/parameters.pkl'):
         os.makedirs(parameters_directory, exist_ok=True)

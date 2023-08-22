@@ -9,11 +9,7 @@ import pandas as pd
 import numpy as np
 
 
-def retrieve_data(date, company_name, days=100, future=False):
-    if future:
-        predicted_data = prediction(date, company_name, days)
-        return predicted_data
-    else:
+def retrieve_data(date, company_name, days=100):
         company_name_extension = company_name + ".NS"
         input_date = datetime.strptime(date, "%Y-%m-%d")
         start_date = input_date - timedelta(days=150)
